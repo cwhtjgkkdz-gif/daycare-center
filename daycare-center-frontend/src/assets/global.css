@@ -1,0 +1,25 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #app { height: 100%; font-family: 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif; -webkit-font-smoothing: antialiased; }
+
+/* 滚动条美化 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #c0c4cc; border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* 页面过渡动画 */
+.fade-enter-active, .fade-leave-active { transition: all 0.25s ease; }
+.fade-enter-from { opacity: 0; transform: translateY(8px); }
+.fade-leave-to { opacity: 0; transform: translateY(-8px); }
+
+/* 卡片统一样式 */
+.page-card { border-radius: 8px; }
+
+/* 搜索区域 */
+.search-bar { background: #fafafa; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+
+/* 表格顶部间距 */
+.el-table { border-radius: 8px; overflow: hidden; }
+
+/* 统计卡片悬停效果 */
+.stat-card { transition: all 0.3s; cursor: default; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }

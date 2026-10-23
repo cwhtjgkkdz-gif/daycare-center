@@ -1,0 +1,863 @@
+{
+  "info": {
+    "name": "托育中心管理系统 - 接口测试",
+    "description": "覆盖全部12个Controller模块的接口测试集合，包含正常/异常场景自动化断言。导入后先运行「认证管理→登录成功」获取Session，再运行其他接口。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "cookie", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "认证管理",
+      "item": [
+        {
+          "name": "1.1 登录成功 (先运行此接口)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });",
+                "pm.test('包含userInfo', function(){ return pm.response.json().data.userInfo !== undefined; });",
+                "pm.test('包含menus', function(){ return Array.isArray(pm.response.json().data.menus); });",
+                "var cookies = pm.response.headers.get('Set-Cookie'); if(cookies) pm.collectionVariables.set('cookie', cookies);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "1.2 登录失败-密码错误",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=400', function(){ return pm.response.json().code === 400; });",
+                "pm.test('提示密码错误', function(){ return pm.response.json().message.indexOf('用户名或密码错误') >= 0; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"wrong\"}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] }
+          }
+        },
+        {
+          "name": "1.3 获取当前用户信息",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });",
+                "pm.test('用户名是admin', function(){ return pm.response.json().data.userInfo.username === 'admin'; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/auth/info", "host": ["{{base_url}}"], "path": ["api","auth","info"] }
+          }
+        },
+        {
+          "name": "1.4 退出登录",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/auth/logout", "host": ["{{base_url}}"], "path": ["api","auth","logout"] }
+          }
+        },
+        {
+          "name": "1.5 未登录访问受保护接口 (应返回401)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('返回401', function(){ pm.response.to.have.status(401); });",
+                "pm.test('提示未登录', function(){ return pm.response.json().message.indexOf('未登录') >= 0; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/child/page", "host": ["{{base_url}}"], "path": ["api","child","page"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "用户管理",
+      "item": [
+        {
+          "name": "2.1 分页查询用户",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });",
+                "pm.test('有分页数据', function(){ var d=pm.response.json().data; return d.total !== undefined && Array.isArray(d.records); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/user/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","user","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "2.2 新增用户",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"test_user\",\"realName\":\"测试用户\",\"phone\":\"13800000000\",\"roleId\":2,\"status\":1}" },
+            "url": { "raw": "{{base_url}}/api/user", "host": ["{{base_url}}"], "path": ["api","user"] }
+          }
+        },
+        {
+          "name": "2.3 删除用户",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('删除成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/user/3", "host": ["{{base_url}}"], "path": ["api","user","3"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "角色管理",
+      "item": [
+        {
+          "name": "3.1 分页查询角色",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });",
+                "pm.test('records是数组', function(){ return Array.isArray(pm.response.json().data.records); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/role/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","role","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "3.2 查询全部角色 (至少3个)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('至少3个角色', function(){ return pm.response.json().data.length >= 3; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/role/list", "host": ["{{base_url}}"], "path": ["api","role","list"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "菜单管理",
+      "item": [
+        {
+          "name": "4.1 获取菜单树",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/menu/tree", "host": ["{{base_url}}"], "path": ["api","menu","tree"] }
+          }
+        },
+        {
+          "name": "4.2 获取角色菜单树",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/menu/role-tree/1", "host": ["{{base_url}}"], "path": ["api","menu","role-tree","1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "班级管理",
+      "item": [
+        {
+          "name": "5.1 分页查询班级",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('有分页数据', function(){ var d=pm.response.json(); return d.code===200 && d.data.total!==undefined; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/class/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","class","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "5.2 查询全部班级",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/class/list", "host": ["{{base_url}}"], "path": ["api","class","list"] }
+          }
+        },
+        {
+          "name": "5.3 新增班级",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"className\":\"测试班级\",\"classType\":\"小班\",\"maxCapacity\":30,\"description\":\"接口测试用\"}" },
+            "url": { "raw": "{{base_url}}/api/class", "host": ["{{base_url}}"], "path": ["api","class"] }
+          }
+        },
+        {
+          "name": "5.4 删除班级",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('删除成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/class/1", "host": ["{{base_url}}"], "path": ["api","class","1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "儿童档案",
+      "item": [
+        {
+          "name": "6.1 分页查询儿童",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('有分页数据', function(){ var d=pm.response.json(); return d.code===200 && d.data.total!==undefined; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/child/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","child","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "6.2 按姓名模糊查询",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/child/page?current=1&size=10&name=张", "host": ["{{base_url}}"], "path": ["api","child","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }, { "key": "name", "value": "张" }
+            ]}
+          }
+        },
+        {
+          "name": "6.3 新增儿童",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"测试儿童\",\"gender\":\"男\",\"birthDate\":\"2022-03-15\",\"classId\":2,\"parentName\":\"测试家长\",\"parentPhone\":\"13811111111\",\"allergies\":\"花粉过敏\",\"status\":1}" },
+            "url": { "raw": "{{base_url}}/api/child", "host": ["{{base_url}}"], "path": ["api","child"] }
+          }
+        },
+        {
+          "name": "6.4 查询儿童详情",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/child/1", "host": ["{{base_url}}"], "path": ["api","child","1"] }
+          }
+        },
+        {
+          "name": "6.5 查询不存在的儿童 (data应为null)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('data为null', function(){ return pm.response.json().data === null; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/child/99999", "host": ["{{base_url}}"], "path": ["api","child","99999"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "教职工管理",
+      "item": [
+        {
+          "name": "7.1 分页查询教职工",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('有分页数据', function(){ var d=pm.response.json(); return d.code===200 && d.data.total!==undefined; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/teacher/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","teacher","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "7.2 查询全部教职工",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/teacher/list", "host": ["{{base_url}}"], "path": ["api","teacher","list"] }
+          }
+        },
+        {
+          "name": "7.3 新增教职工",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"测试教师\",\"gender\":\"女\",\"position\":\"教师\",\"phone\":\"13900001111\",\"hireDate\":\"2024-09-01\",\"status\":1}" },
+            "url": { "raw": "{{base_url}}/api/teacher", "host": ["{{base_url}}"], "path": ["api","teacher"] }
+          }
+        },
+        {
+          "name": "7.4 按岗位筛选教职工",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/teacher/page?current=1&size=10&position=教师", "host": ["{{base_url}}"], "path": ["api","teacher","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }, { "key": "position", "value": "教师" }
+            ]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "园区活动",
+      "item": [
+        {
+          "name": "8.1 分页查询活动",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/activity/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","activity","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "8.2 新增活动",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"title\":\"六一儿童节汇演\",\"content\":\"各班准备节目表演\",\"type\":\"节日庆典\",\"location\":\"多功能厅\",\"startTime\":\"2026-06-01 09:00:00\",\"endTime\":\"2026-06-01 11:00:00\",\"publisher\":\"管理员\"}" },
+            "url": { "raw": "{{base_url}}/api/activity", "host": ["{{base_url}}"], "path": ["api","activity"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "通知公告",
+      "item": [
+        {
+          "name": "9.1 分页查询通知",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/notice/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","notice","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "9.2 新增通知",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"title\":\"暑假放假通知\",\"content\":\"7月1日至8月31日放假\",\"type\":\"通知\",\"publisher\":\"管理员\"}" },
+            "url": { "raw": "{{base_url}}/api/notice", "host": ["{{base_url}}"], "path": ["api","notice"] }
+          }
+        },
+        {
+          "name": "9.3 按类型筛选通知",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/notice/page?current=1&size=10&type=通知", "host": ["{{base_url}}"], "path": ["api","notice","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }, { "key": "type", "value": "通知" }
+            ]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "财务管理",
+      "item": [
+        {
+          "name": "10.1 分页查询财务",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/finance/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","finance","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "10.2 新增收费记录",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('新增成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Cookie", "value": "{{cookie}}" }],
+            "body": { "mode": "raw", "raw": "{\"childName\":\"张三\",\"type\":\"收费\",\"amount\":2800.00,\"handler\":\"李财务\",\"remark\":\"2026年6月托育费\"}" },
+            "url": { "raw": "{{base_url}}/api/finance", "host": ["{{base_url}}"], "path": ["api","finance"] }
+          }
+        },
+        {
+          "name": "10.3 按类型筛选 (收费)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/finance/page?current=1&size=10&type=收费", "host": ["{{base_url}}"], "path": ["api","finance","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }, { "key": "type", "value": "收费" }
+            ]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "考勤管理",
+      "item": [
+        {
+          "name": "11.1 分页查询考勤",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/attendance/page?current=1&size=10", "host": ["{{base_url}}"], "path": ["api","attendance","page"], "query": [
+              { "key": "current", "value": "1" }, { "key": "size", "value": "10" }
+            ]}
+          }
+        },
+        {
+          "name": "11.2 儿童签到",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('签到成功', function(){ return pm.response.json().code === 200; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/attendance/check-in?childId=1&classId=1", "host": ["{{base_url}}"], "path": ["api","attendance","check-in"], "query": [
+              { "key": "childId", "value": "1" }, { "key": "classId", "value": "1" }
+            ]}
+          }
+        },
+        {
+          "name": "11.3 考勤统计 (含total/present/absent)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });",
+                "pm.test('含total', function(){ return pm.response.json().data.total !== undefined; });",
+                "pm.test('含present', function(){ return pm.response.json().data.present !== undefined; });",
+                "pm.test('含absent', function(){ return pm.response.json().data.absent !== undefined; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/attendance/statistics?startDate=2026-01-01&endDate=2026-12-31", "host": ["{{base_url}}"], "path": ["api","attendance","statistics"], "query": [
+              { "key": "startDate", "value": "2026-01-01" }, { "key": "endDate", "value": "2026-12-31" }
+            ]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "数据统计大屏",
+      "item": [
+        {
+          "name": "12.1 首页概览 (4项卡片数据)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('code=200', function(){ return pm.response.json().code === 200; });",
+                "pm.test('含totalChildren', function(){ return pm.response.json().data.totalChildren !== undefined; });",
+                "pm.test('含totalTeacher', function(){ return pm.response.json().data.totalTeacher !== undefined; });",
+                "pm.test('含totalClasses', function(){ return pm.response.json().data.totalClasses !== undefined; });",
+                "pm.test('含monthlyFee', function(){ return pm.response.json().data.monthlyFee !== undefined; });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/dashboard/summary", "host": ["{{base_url}}"], "path": ["api","dashboard","summary"] }
+          }
+        },
+        {
+          "name": "12.2 各班儿童人数 (柱状图)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组含name/value', function(){ var d=pm.response.json().data; return Array.isArray(d); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/dashboard/children-per-class", "host": ["{{base_url}}"], "path": ["api","dashboard","children-per-class"] }
+          }
+        },
+        {
+          "name": "12.3 教职工岗位分布 (饼图)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/dashboard/teacher-by-position", "host": ["{{base_url}}"], "path": ["api","dashboard","teacher-by-position"] }
+          }
+        },
+        {
+          "name": "12.4 近6月收费趋势 (折线图)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/dashboard/monthly-fees", "host": ["{{base_url}}"], "path": ["api","dashboard","monthly-fees"] }
+          }
+        },
+        {
+          "name": "12.5 儿童男女比例 (环形图)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('状态码200', function(){ pm.response.to.have.status(200); });",
+                "pm.test('返回数组', function(){ return Array.isArray(pm.response.json().data); });"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{cookie}}" }],
+            "url": { "raw": "{{base_url}}/api/dashboard/gender-ratio", "host": ["{{base_url}}"], "path": ["api","dashboard","gender-ratio"] }
+          }
+        }
+      ]
+    }
+  ]
+}
