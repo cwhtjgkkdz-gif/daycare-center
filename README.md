@@ -79,8 +79,6 @@
 
 ## 📸 界面截图
 
-> 以下为界面截图预留位置，请运行项目后将截图放入 `docs/images/` 目录并替换对应文件名。
-
 | 登录页 | 数据看板 | 儿童管理 |
 |:---:|:---:|:---:|
 | ![登录页](docs/images/login.png) | ![数据看板](docs/images/dashboard.png) | ![儿童管理](docs/images/child.png) |
